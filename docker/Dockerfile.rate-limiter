@@ -1,0 +1,32 @@
+# Basic Rate Limiter Service
+FROM golang:1.22.5-alpine AS builder
+
+WORKDIR /app
+
+# Copy go mod files
+COPY rate-limiter/go.mod ./rate-limiter/
+COPY rule-engine/go.mod ./rule-engine/
+COPY go.mod ./
+
+# Download dependencies
+RUN cd rate-limiter && go mod download
+RUN cd rule-engine && go mod download
+
+# Copy source code
+COPY rate-limiter/ ./rate-limiter/
+COPY rule-engine/ ./rule-engine/
+
+# Build the application
+RUN cd rate-limiter && go build -o /app/bin/server cmd/server/main.go
+
+# Final stage
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates
+WORKDIR /root/
+
+COPY --from=builder /app/bin/server .
+
+EXPOSE 8080
+
+CMD ["./server"]

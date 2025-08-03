@@ -1,0 +1,25 @@
+# Test Client for Load Testing
+FROM golang:1.22.5-alpine AS builder
+
+WORKDIR /app
+
+# Copy source
+COPY rate-limiter/examples/client/ ./
+
+# Build the test client
+RUN go build -o test-client main.go
+
+# Final stage
+FROM alpine:latest
+
+RUN apk --no-cache add curl
+
+WORKDIR /root/
+
+COPY --from=builder /app/test-client .
+
+# Add load testing script
+COPY docker/load-test.sh ./load-test.sh
+RUN chmod +x ./load-test.sh
+
+CMD ["./load-test.sh"]
